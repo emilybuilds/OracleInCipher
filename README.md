@@ -1,110 +1,125 @@
-# FHEVM Hardhat Template
+# OracleInCipher
 
-A Hardhat-based template for developing Fully Homomorphic Encryption (FHE) enabled Solidity smart contracts using the
-FHEVM protocol by Zama.
+OracleInCipher is a privacy preserving daily price prediction market for ETH and BTC on Zama FHEVM.
+Users submit encrypted target prices and encrypted directions (true for higher, false for lower), stake ETH, and later claim encrypted points when their prediction is correct after the daily UTC 00:00 oracle update.
 
-## Quick Start
+## Overview
+This project combines Fully Homomorphic Encryption (FHE) with on-chain settlement so predictions can be evaluated without revealing user inputs or the recorded daily price.
+It is designed for a minimal, auditable flow: one update per day, one claim per user, and all sensitive values remain encrypted end to end.
 
-For detailed instructions see:
-[FHEVM Hardhat Quick Start Tutorial](https://docs.zama.ai/protocol/solidity-guides/getting-started/quick-start-tutorial)
+## Problems solved
+- Protects user alpha: predicted prices and directions never appear in plaintext on-chain.
+- Prevents data leakage: the daily oracle price is stored encrypted, so public observers cannot infer it from storage or events.
+- Enables fair settlement: points are awarded based on encrypted comparisons rather than off-chain judgment.
+- Minimizes trust: even with a centralized oracle update, the rest of the logic is deterministic and verifiable on-chain.
 
+## Advantages
+- Strong privacy by default using Zama FHEVM and the relayer SDK.
+- Simple daily cadence that reduces complexity and gas uncertainty.
+- Clean separation between price recording and user claiming.
+- Explicit support for two assets (ETH and BTC) with a fixed direction model.
+- Frontend reads with viem and writes with ethers for predictable wallet behavior.
+
+## Key features
+- Encrypted prediction inputs: price and direction are encrypted client side.
+- Daily encrypted price snapshots at UTC 00:00.
+- Manual claim flow that awards encrypted points equal to the staked ETH amount.
+- No mock data: all frontend views are backed by on-chain state.
+- ABI sourced from deployment artifacts to guarantee consistency with the deployed contract.
+
+## How it works
+1. A user encrypts a target price and a direction, then stakes ETH via `submitPrediction`.
+2. At UTC 00:00 each day, the owner calls `recordDailyPrice` with the encrypted price.
+3. The next day, the user calls `claimReward` to receive encrypted points if the prediction was correct.
+
+## Architecture
+### Smart contracts
+- Core contract: `contracts/OraclePrediction.sol`
+- Tests: `test/OraclePrediction.ts`
+- Tasks: `tasks/pricePrediction.ts`
+- Deployment script: `deploy/deploy.ts`
+
+### Frontend
+- Location: `src/`
+- React + Vite UI with RainbowKit wallet support.
+- `viem` is used for contract reads and `ethers` for writes.
+- Zama relayer SDK handles encryption, decryption, and ciphertext handles.
+- Contract ABI is copied into the frontend as a TypeScript module; the source is `deployments/sepolia/OraclePrediction.json`.
+
+### Oracle update
+- The daily price is recorded on-chain at UTC 00:00.
+- Only the owner updates the price, but the stored value stays encrypted.
+
+## Tech stack
+- Solidity + Hardhat + TypeScript
+- Zama FHEVM
+- React + Vite
+- viem (reads) + ethers (writes)
+- RainbowKit wallet UI
+- @zama-fhe/relayer-sdk
+
+## Repository layout
+- `contracts/` smart contracts
+- `deploy/` deployment scripts
+- `deployments/` deployment artifacts and ABI outputs
+- `tasks/` Hardhat tasks
+- `test/` contract tests
+- `src/` frontend application
+- `docs/` Zama references
+
+## Setup
 ### Prerequisites
+- Node.js 20+
+- npm
+- `.env` with:
+  - `INFURA_API_KEY` for Sepolia RPC access
+  - `PRIVATE_KEY` for deployment (no mnemonic)
+  - Optional: `ETHERSCAN_API_KEY`
 
-- **Node.js**: Version 20 or higher
-- **npm or yarn/pnpm**: Package manager
-
-### Installation
-
-1. **Install dependencies**
-
-   ```bash
-   npm install
-   ```
-
-2. **Set up environment variables**
-
-   ```bash
-   npx hardhat vars set MNEMONIC
-
-   # Set your Infura API key for network access
-   npx hardhat vars set INFURA_API_KEY
-
-   # Optional: Set Etherscan API key for contract verification
-   npx hardhat vars set ETHERSCAN_API_KEY
-   ```
-
-3. **Compile and test**
-
-   ```bash
-   npm run compile
-   npm run test
-   ```
-
-4. **Deploy to local network**
-
-   ```bash
-   # Start a local FHEVM-ready node
-   npx hardhat node
-   # Deploy to local network
-   npx hardhat deploy --network localhost
-   ```
-
-5. **Deploy to Sepolia Testnet**
-
-   ```bash
-   # Deploy to Sepolia
-   npx hardhat deploy --network sepolia
-   # Verify contract on Etherscan
-   npx hardhat verify --network sepolia <CONTRACT_ADDRESS>
-   ```
-
-6. **Test on Sepolia Testnet**
-
-   ```bash
-   # Once deployed, you can run a simple test on Sepolia.
-   npx hardhat test --network sepolia
-   ```
-
-## 📁 Project Structure
-
-```
-fhevm-hardhat-template/
-├── contracts/           # Smart contract source files
-│   └── FHECounter.sol   # Example FHE counter contract
-├── deploy/              # Deployment scripts
-├── tasks/               # Hardhat custom tasks
-├── test/                # Test files
-├── hardhat.config.ts    # Hardhat configuration
-└── package.json         # Dependencies and scripts
+### Install and build
+```bash
+npm install
+npm run compile
+npm run test
 ```
 
-## 📜 Available Scripts
+## Deployment
+```bash
+# Local (in-memory hardhat network)
+npx hardhat deploy
 
-| Script             | Description              |
-| ------------------ | ------------------------ |
-| `npm run compile`  | Compile all contracts    |
-| `npm run test`     | Run all tests            |
-| `npm run coverage` | Generate coverage report |
-| `npm run lint`     | Run linting checks       |
-| `npm run clean`    | Clean build artifacts    |
+# Sepolia (requires INFURA_API_KEY and PRIVATE_KEY)
+npx hardhat deploy --network sepolia
+```
+Deployment artifacts are written to `deployments/`. Update the deployed contract address in the frontend config after deployment.
 
-## 📚 Documentation
+## Frontend usage
+- Update the Sepolia contract address in `src/src/config/contracts.ts`.
+- Ensure the frontend ABI matches the deployed contract by copying from `deployments/sepolia/OraclePrediction.json` into the frontend TypeScript ABI module.
+- Start the dev server:
+  ```bash
+  cd src
+  npm install
+  npm run dev
+  ```
 
-- [FHEVM Documentation](https://docs.zama.ai/fhevm)
-- [FHEVM Hardhat Setup Guide](https://docs.zama.ai/protocol/solidity-guides/getting-started/setup)
-- [FHEVM Testing Guide](https://docs.zama.ai/protocol/solidity-guides/development-guide/hardhat/write_test)
-- [FHEVM Hardhat Plugin](https://docs.zama.ai/protocol/solidity-guides/development-guide/hardhat)
+## Security and privacy model
+- All sensitive values are encrypted before reaching the chain.
+- The contract stores encrypted predictions and encrypted daily prices.
+- The relayer SDK manages encryption and decryption, keeping secrets client side.
+- View functions avoid `msg.sender` to maintain deterministic reads.
 
-## 📄 License
+## Limitations and assumptions
+- The oracle update is centralized and must be performed daily at UTC 00:00.
+- Rewards are denominated as encrypted points, not ETH transfers.
+- Each prediction targets the next daily update only.
 
-This project is licensed under the BSD-3-Clause-Clear License. See the [LICENSE](LICENSE) file for details.
+## Future plan
+- Support more assets and configurable update schedules.
+- Add optional staking tiers and dynamic reward multipliers.
+- Integrate multiple oracle sources with quorum based price recording.
+- Extend UI analytics with privacy friendly aggregates.
+- Explore gas optimizations for batch claims and batch updates.
 
-## 🆘 Support
-
-- **GitHub Issues**: [Report bugs or request features](https://github.com/zama-ai/fhevm/issues)
-- **Documentation**: [FHEVM Docs](https://docs.zama.ai)
-- **Community**: [Zama Discord](https://discord.gg/zama)
-
----
-
-**Built with ❤️ by the Zama team**
+## License
+MIT
