@@ -1,0 +1,62 @@
+.hero {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 1.5rem;
+  align-items: center;
+  padding: 1.5rem 0.5rem;
+}
+
+.hero__text h1 {
+  margin: 0 0 0.5rem;
+  font-size: 2.3rem;
+  line-height: 1.1;
+  letter-spacing: -0.04em;
+}
+
+.hero__text .accent {
+  color: #7dd3ff;
+}
+
+.hero__text .lede {
+  margin: 0.5rem 0 1rem;
+  max-width: 760px;
+  color: #b9c3d4;
+}
+
+.eyebrow {
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  font-size: 0.8rem;
+  color: #89a3ff;
+  margin: 0 0 0.5rem;
+}
+
+.badge-row {
+  display: flex;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.badge {
+  padding: 0.4rem 0.75rem;
+  border-radius: 999px;
+  background: rgba(137, 163, 255, 0.12);
+  color: #dbe5ff;
+  font-size: 0.9rem;
+}
+
+.badge--ghost {
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.hero__actions {
+  display: flex;
+  justify-content: flex-end;
+}
+
+@media (max-width: 900px) {
+  .hero {
+    grid-template-columns: 1fr;
+    padding: 1rem 0;
+  }
+}
